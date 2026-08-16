@@ -1,4 +1,4 @@
-# 얼굴 인식 화면
+# 얼굴 인식 화면 # index1
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
@@ -24,11 +24,11 @@ class FaceAuthForm(QWidget):
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # 실제 웹캠 영상이 출력될 원형 위젯
-        self.camera_view = CircularCameraWidget(180)
+        self.camera_view = CircularCameraWidget(300)
 
         self.sub_label = QLabel("정면을 바라봐주세요")
-        self.title_label.setFont(QFont("Malgun Gothic", 12))
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.sub_label.setFont(QFont("Malgun Gothic", 12))
+        self.sub_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(self.title_label)
         layout.addWidget(self.camera_view, 0, Qt.AlignmentFlag.AlignCenter)

@@ -1,7 +1,7 @@
-# 로그인 GUI
+# 로그인 GUI # index0
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFrame
 
 class LoginForm(QWidget):
     def __init__(self, controller):
@@ -33,8 +33,13 @@ class LoginForm(QWidget):
         self.login_btn.setObjectName("LoginBTN")
         self.login_btn.clicked.connect(self.handle_login)
 
+        self.line = QFrame()
+        self.line.setFrameShape(QFrame.Shape.HLine)
+        self.line.setStyleSheet("QFrame { color: #D0D0D0; }")
+
         self.register_btn = QPushButton("유저 등록")
         self.register_btn.setObjectName("RegisterBTN")
+        self.register_btn.clicked.connect(self.handle_register)
 
         layout.addWidget(self.avatar, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addSpacing(20)
@@ -42,9 +47,15 @@ class LoginForm(QWidget):
         layout.addWidget(self.pw_textedit)
         layout.addSpacing(10)
         layout.addWidget(self.login_btn)
+        layout.addSpacing(10)
+        layout.addWidget(self.line)
+        layout.addSpacing(10)
         layout.addWidget(self.register_btn)
 
         self.setLayout(layout)
 
     def handle_login(self):
         self.controller.switch_to_screen(1)
+
+    def handle_register(self):
+        self.controller.switch_to_screen(3)
