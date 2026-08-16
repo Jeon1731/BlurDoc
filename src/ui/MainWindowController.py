@@ -4,6 +4,8 @@ from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from LoginForm import LoginForm
 from FaceAuthForm import FaceAuthForm
 from MainForm import MainForm
+from RegistrationForm import RegistrationForm
+from FaceRegistForm import FaceRegistForm
 
 class MainWindowContoller(QMainWindow):
     def __init__(self):
@@ -17,11 +19,16 @@ class MainWindowContoller(QMainWindow):
         self.login_form = LoginForm(self)
         self.face_auth_form = FaceAuthForm(self)
         self.main_form = MainForm(self)
+        self.registration_form = RegistrationForm(self)
+        self.face_regist_form = FaceRegistForm(self)
 
-        self.central_stacked.addWidget(self.login_form)
-        self.central_stacked.addWidget(self.face_auth_form)
-        self.central_stacked.addWidget(self.main_form)
-
+        self.central_stacked.addWidget(self.login_form)         #index 0
+        self.central_stacked.addWidget(self.face_auth_form)     #index 1
+        self.central_stacked.addWidget(self.main_form)          #index 2
+        self.central_stacked.addWidget(self.registration_form)  #index 3
+        self.central_stacked.addWidget(self.face_regist_form)   #index 4
+        
+        
         # 전역 스타일시트
         self.setStyleSheet("""
             QWidget {
@@ -56,13 +63,33 @@ class MainWindowContoller(QMainWindow):
                 color: #555555;
                 }
             QPushButton#RegisterBTN:hover { background-color: #EEEEEE; }
+            QPushButton#FaceRegisterBTN {
+                background-color: #FFFFFF;
+                border: 1px solid #D0D0D0;
+                border-radius: 20px;
+                padding: 12px;
+                font-size: 13px;
+                color: #555555;
+            }
+            QPushButton#FaceRegisterBTN:hover { background-color: #EEEEEE; }
+            QPushButton#UserRegisterBTN {
+                background-color: #FFFFFF;
+                border: 1px solid #D0D0D0;
+                border-radius: 20px;
+                padding: 12px;
+                font-size: 13px;
+                color: #555555;
+            }
+            QPushButton#UserRegisterBTN:hover { background-color: #EEEEEE; }
             """)
 
     def switch_to_screen(self, index):
         self.central_stacked.setCurrentIndex(index)
         # Face Auth Form으로 진입할 때 카메라 가동 시작
-        if index == 1:
+        if index == 1: #FaceAuthForm
             self.face_auth_form.start_camera()
+        if index == 4: #FaceRegistForm
+            self.face_regist_form.start_camera()
 
     def closeEvent(self, event):
         # 창이 닫힐 때 카메라 스레드가 켜져있다면 확실하게 종료
