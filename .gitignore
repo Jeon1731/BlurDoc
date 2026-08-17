@@ -3,3 +3,6 @@
 
 # .pyc
 *.pyc
+
+# data/
+data/

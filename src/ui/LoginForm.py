@@ -1,12 +1,16 @@
 # 로그인 GUI # index0
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFrame
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFrame, QMessageBox
+import sys
+sys.path.append('src')
+from database import DatabaseManager, LogType
 
 class LoginForm(QWidget):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.db = DatabaseManager("data/users.db")
         self.init_ui()
 
     def init_ui(self):
@@ -55,7 +59,27 @@ class LoginForm(QWidget):
         self.setLayout(layout)
 
     def handle_login(self):
-        self.controller.switch_to_screen(1)
+        username = self.id_textedit.text().strip()
+        password = self.pw_textedit.text()
+        
+        if not username or not password:
+            QMessageBox.warning(self, "알림", "아이디와 비밀번호를 입력해주세요.")
+            return
+        
+        # 데이터베이스에서 사용자 확인
+        success, message = self.db.check_user(username, password)
+        
+        if success:
+            QMessageBox.information(self, "성공", message)
+            # 현재 사용자 저장
+            self.controller.current_user = username
+            # 입력 필드 초기화
+            self.id_textedit.clear()
+            self.pw_textedit.clear()
+            # 얼굴 인증 화면으로 이동
+            self.controller.switch_to_screen(1)
+        else:
+            QMessageBox.warning(self, "오류", message)
 
     def handle_register(self):
         self.controller.switch_to_screen(3)

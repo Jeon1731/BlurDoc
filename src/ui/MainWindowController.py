@@ -12,6 +12,7 @@ class MainWindowContoller(QMainWindow):
         super().__init__()
         self.setWindowTitle("ViVi")
         self.setFixedSize(380, 620)
+        self.current_user = None  # 현재 로그인한 사용자
 
         self.central_stacked = QStackedWidget()
         self.setCentralWidget(self.central_stacked)
@@ -88,6 +89,8 @@ class MainWindowContoller(QMainWindow):
         # Face Auth Form으로 진입할 때 카메라 가동 시작
         if index == 1: #FaceAuthForm
             self.face_auth_form.start_camera()
+        if index == 2: #MainForm
+            self.main_form.update_logs()
         if index == 4: #FaceRegistForm
             self.face_regist_form.start_camera()
 
