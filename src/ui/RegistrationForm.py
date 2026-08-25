@@ -4,13 +4,17 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QWidget, QFrame,
     QVBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox
+    QLabel, QLineEdit, QPushButton, QCheckBox, QMessageBox
     )
+import sys
+sys.path.append('src')
+from database import DatabaseManager
 
 class RegistrationForm(QWidget):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.db = DatabaseManager("data/users.db")
         self.init_ui()
 
     def init_ui(self):
@@ -78,4 +82,32 @@ class RegistrationForm(QWidget):
         self.controller.switch_to_screen(4)
 
     def handle_user_regist(self):
-        self.controller.switch_to_screen(2)
+        # 입력값 확인
+        username = self.id_textedit.text().strip()
+        password = self.pw_textedit.text()
+        password_confirm = self.check_textedit.text()
+        
+        # 약관 동의 확인
+        if not self.check_agree.isChecked():
+            QMessageBox.warning(self, "알림", "얼굴 등록 및 인식 동의가 필요합니다.")
+            return
+        
+        # 입력 필드 확인
+        if not username or not password or not password_confirm:
+            QMessageBox.warning(self, "알림", "모든 필드를 입력해주세요.")
+            return
+        
+        # 데이터베이스에 회원 등록
+        success, message = self.db.register_user(username, password, password_confirm)
+        
+        if success:
+            QMessageBox.information(self, "성공", message)
+            # 입력 필드 초기화
+            self.id_textedit.clear()
+            self.pw_textedit.clear()
+            self.check_textedit.clear()
+            self.check_agree.setChecked(False)
+            # 로그인 화면으로 이동
+            self.controller.switch_to_screen(0)
+        else:
+            QMessageBox.warning(self, "오류", message)

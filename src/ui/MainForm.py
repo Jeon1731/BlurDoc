@@ -2,11 +2,16 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QTextEdit, QPushButton
+import sys
+sys.path.append('src')
+from database import DatabaseManager
+from datetime import datetime
 
 class MainForm(QWidget):
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.db = DatabaseManager("data/users.db")
         self.init_ui()
 
     def init_ui(self):
@@ -34,7 +39,7 @@ class MainForm(QWidget):
 
         self.log_display = QTextEdit()
         self.log_display.setReadOnly(True)
-        self.log_display.setPlainText("21:38 | Laptop Locked\n21:39 | Laptop UnLocked") # (Temp)
+        self.load_logs()
         self.log_display.setStyleSheet("""
             QTextEdit {
                 background-color: #FFFFFF;
@@ -52,3 +57,34 @@ class MainForm(QWidget):
         layout.addWidget(self.log_display)
 
         self.setLayout(layout)
+
+    def load_logs(self):
+        """현재 사용자 로그 조회 및 표시"""
+        if self.controller.current_user:
+            logs = self.db.get_logs(self.controller.current_user)
+            log_text = self.format_logs(logs)
+            self.log_display.setPlainText(log_text)
+        else:
+            self.log_display.setPlainText("로그인 후 조회됩니다.")
+
+    def format_logs(self, logs):
+        """로그 포맷팅"""
+        if not logs:
+            return "아직 기록된 로그가 없습니다."
+        
+        formatted_logs = []
+        for log_id, username, log_type, date_time in logs:
+            # date 형식: "2026-08-17 10:30:45"
+            try:
+                log_time = datetime.strptime(date_time, "%Y-%m-%d %H:%M:%S")
+                time_str = log_time.strftime("%H:%M")
+            except:
+                time_str = date_time[:5]  # HH:MM 부분만 추출
+            
+            formatted_logs.append(f"{time_str} | {log_type}")
+        
+        return "\n".join(formatted_logs)
+
+    def update_logs(self):
+        """로그 새로고침"""
+        self.load_logs()
