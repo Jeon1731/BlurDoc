@@ -1,15 +1,25 @@
 # 얼굴 등록 화면 # index4
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QMessageBox
+
+import sys
+sys.path.append('src')
+from database import DatabaseManager
 
 from CircularCameraWidget import CircularCameraWidget
 from CameraThread import CameraThread
 
+from vivi.FaceDetector import FaceDetector
+from vivi.FaceRecognizer import FaceRecognizer
+
 class FaceRegistForm(QWidget):
+    face_registed = Signal(object)
+
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.db = DatabaseManager("data/users.db")
         self.camera_thread = None
         self.init_ui()
 
@@ -39,14 +49,36 @@ class FaceRegistForm(QWidget):
     def start_camera(self):
         # 백그라운드 스레드로 카메라 작동 시동
         self.camera_thread = CameraThread()
-        self.camera_thread.frame_received.connect(self.camera_view.update_frame)
+
+        # Face Detector 생성
+        self.face_detector = FaceDetector()
+        self.camera_thread.frame_received.connect(self.face_detector.run) # face detector 메소드 연결
+        self.face_detector.frame_limit_reached.connect(self.finish_face_registration)
+        
+        self.camera_thread.qimage_frame_received.connect(self.camera_view.update_frame)
         self.camera_thread.start()
 
-        # (Temp) 3초 뒤 카메라를 끄고 메인 화면으로 이동
-        QTimer.singleShot(3000, self.stop_camera_and_proceed)
+    def finish_face_registration(self, best_frame, best_face):
+        if self.camera_thread and self.camera_thread.isRunning():
+            self.camera_thread.stop()
+
+        if best_frame is None or best_face[14] <= 0:
+            QMessageBox.warning(self, "오류", "얼굴을 찾지 못했습니다. 다시 시도해주세요.")
+            self.controller.switch_to_screen(3)
+            return
+
+        self.face_recognizer = FaceRecognizer()
+        self.face_recognizer.run(best_frame, best_face)
+
+        if self.face_recognizer.face_vector is not None:
+            QMessageBox.information(self, "성공", "얼굴 등록이 완료되었습니다.")
+            self.face_registed.emit(self.face_recognizer.face_vector)
+            self.controller.switch_to_screen(3)
+        else:
+            QMessageBox.warning(self, "오류", "얼굴 등록에 실패하였습니다.")
 
 
     def stop_camera_and_proceed(self):
-        if self.camera_thread and self.camera_thread.isRunning:
+        if self.camera_thread and self.camera_thread.isRunning():
             self.camera_thread.stop()
         self.controller.switch_to_screen(3)

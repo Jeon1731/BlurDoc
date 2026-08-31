@@ -4,7 +4,7 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFrame, QMessageBox
 import sys
 sys.path.append('src')
-from database import DatabaseManager, LogType
+from database import DatabaseManager
 
 class LoginForm(QWidget):
     def __init__(self, controller):

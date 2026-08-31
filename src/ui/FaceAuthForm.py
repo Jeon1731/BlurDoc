@@ -39,12 +39,11 @@ class FaceAuthForm(QWidget):
     def start_camera(self):
         # 백그라운드 스레드로 카메라 작동 시동
         self.camera_thread = CameraThread()
-        self.camera_thread.frame_received.connect(self.camera_view.update_frame)
+        self.camera_thread.qimage_frame_received.connect(self.camera_view.update_frame)
         self.camera_thread.start()
 
         # (Temp) 3초 뒤 카메라를 끄고 메인 화면으로 이동
         QTimer.singleShot(3000, self.stop_camera_and_proceed)
-
 
     def stop_camera_and_proceed(self):
         if self.camera_thread and self.camera_thread.isRunning:

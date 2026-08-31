@@ -1,4 +1,6 @@
 import sqlite3
+import sqlite_vec
+import struct
 import hashlib
 import os
 from pathlib import Path
@@ -29,6 +31,11 @@ class DatabaseManager:
             timeout=30,
             check_same_thread=False,
         )
+        conn.enable_load_extension(True)
+        try:
+            sqlite_vec.load(conn)
+        finally:
+            conn.enable_load_extension(False)
         conn.execute("PRAGMA busy_timeout = 30000")
         conn.execute("PRAGMA journal_mode = WAL")
         return conn
@@ -41,7 +48,7 @@ class DatabaseManager:
         # 유저 테이블
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id INTEGER PRIMARY KEY AUTOINCREMENT, -- (Temp) id 랜덤화
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
                 created_at DATETIME DEFAULT (datetime('now','localtime'))
@@ -58,6 +65,22 @@ class DatabaseManager:
                 FOREIGN KEY (username) REFERENCES users(username)
             )
         ''')
+
+        # 매핑 테이블
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_vec_mapping (
+            vector_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            FOREIGN KEY(username) REFERENCES users(username)
+        )
+        """)
+
+        # 벡터 테이블
+        cursor.execute('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS vectors USING vec0(
+                embedding float[128]
+            )
+        ''')
         
         conn.commit()
         conn.close()
@@ -66,7 +89,7 @@ class DatabaseManager:
         """비밀번호 해싱 (SHA-256)"""
         return hashlib.sha256(password.encode()).hexdigest()
 
-    def register_user(self, username, password, password_confirm):
+    def register_user(self, username, password, password_confirm, face_vector=None):
         """회원 등록"""
         conn = None
         try:
@@ -93,6 +116,12 @@ class DatabaseManager:
                 INSERT INTO users (username, password)
                 VALUES (?, ?)
             ''', (username, hashed_password))
+
+            if face_vector is not None:
+                success, message = self.mapping_user_and_vector(username, face_vector, conn)
+                if not success:
+                    conn.rollback()
+                    return False, message
 
             conn.commit()
             return True, "회원 등록 성공!"
@@ -208,4 +237,31 @@ class DatabaseManager:
             return []
         finally:
             if conn is not None:
+                conn.close()
+
+    def serialize_vector(self, vector):
+        """벡터를 바이트(Blob)로 변환"""
+        values = vector.reshape(-1).tolist()
+        return struct.pack(f"{len(values)}f", *(float(value) for value in values))
+
+    def mapping_user_and_vector(self, username, vector, conn=None):
+        """매핑 테이블 삽입"""
+        close_conn = conn is None
+        try:
+            if conn is None:
+                conn = self.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute("INSERT INTO user_vec_mapping (username) VALUES (?)", (username,))
+            vector_id = cursor.lastrowid
+
+            cursor.execute("INSERT INTO vectors (rowid, embedding) VALUES (?, ?)", (vector_id, self.serialize_vector(vector)))
+
+            if close_conn:
+                conn.commit()
+            return True, "얼굴 등록 성공!"
+        except Exception as e:
+            return False, f"매핑 테이블 오류: {str(e)}"
+        finally:
+            if close_conn and conn is not None:
                 conn.close()

@@ -22,6 +22,8 @@ class MainWindowContoller(QMainWindow):
         self.main_form = MainForm(self)
         self.registration_form = RegistrationForm(self)
         self.face_regist_form = FaceRegistForm(self)
+        self.registration_form.face_regist_form = self.face_regist_form
+        self.face_regist_form.face_registed.connect(self.registration_form.handle_face_registered)
 
         self.central_stacked.addWidget(self.login_form)         #index 0
         self.central_stacked.addWidget(self.face_auth_form)     #index 1
