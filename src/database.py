@@ -244,6 +244,31 @@ class DatabaseManager:
         values = vector.reshape(-1).tolist()
         return struct.pack(f"{len(values)}f", *(float(value) for value in values))
 
+    def get_user_vector(self, username):
+        """사용자 이름에 연결된 얼굴 벡터 조회"""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT v.embedding
+                FROM user_vec_mapping AS m
+                JOIN vectors AS v ON v.rowid = m.vector_id
+                WHERE m.username = ?
+            """, (username,))
+            row = cursor.fetchone()
+
+            if row is None:
+                return None
+
+            return struct.unpack("128f", row[0])
+        except Exception as e:
+            print(f"얼굴 벡터 조회 오류: {str(e)}")
+            return None
+        finally:
+            if conn is not None:
+                conn.close()
+
     def mapping_user_and_vector(self, username, vector, conn=None):
         """매핑 테이블 삽입"""
         close_conn = conn is None
